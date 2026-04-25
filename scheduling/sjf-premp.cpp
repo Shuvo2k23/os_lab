@@ -2,8 +2,8 @@
 
 using namespace std;
 
-struct process{
-    int id,burst,arr,wt,tt,ct;
+struct Process{
+    int id,burst,arr,pr,wt,tt,ct;
 };
 
 struct GanttEntry{
@@ -12,12 +12,12 @@ struct GanttEntry{
     int end;
 };
 
-bool com(process &a, process &b){
+bool com(Process &a, Process &b){
     if(a.arr==b.arr) return a.id<b.id;
     return a.arr<b.arr;
 }
 
-void calculate(vector<process>&pr, vector<GanttEntry>&gantt){
+void calculate(vector<Process>&pr, vector<GanttEntry>&gantt){
     int n = pr.size();
     vector<int> rem(n);
     for(int i = 0; i < n; i++) rem[i] = pr[i].burst;
@@ -37,10 +37,10 @@ void calculate(vector<process>&pr, vector<GanttEntry>&gantt){
             }
         }
 
-        int runPid = 0;
+        int runPid = 0; //initially choose as idle mode
         if(pick != -1){
-            rem[pick]--;
-            runPid = pr[pick].id;
+            rem[pick]--;    //decrement  te remaining time
+            runPid = pr[pick].id;   //save pid for gantt chart
             if(rem[pick] == 0){
                 pr[pick].ct = time + 1;
                 done++;
@@ -63,34 +63,47 @@ void calculate(vector<process>&pr, vector<GanttEntry>&gantt){
     }
 }
 
-int main(){
-    int n;
-    cout<<"Enter number of process: ";
-    cin>>n;
-    vector<process>pr(n);
-    for(int i=0;i<n;i++){
-        cout<<"Enter arrival time, burst time for process "<<i+1<<" : ";
-        cin>>pr[i].arr>>pr[i].burst;
-        pr[i].id = i+1;
-    }
-    sort(pr.begin(),pr.end(),com);
-    vector<GanttEntry> gantt;
-    calculate(pr,gantt);
-
+void printGantt(const vector<GanttEntry>&gantt){
     cout << "\nGantt Chart:\n";
     for(auto &g : gantt){
         if(g.pid == 0) cout << "[IDLE: " << g.start << "-" << g.end << "] ";
         else cout << "[P" << g.pid << ": " << g.start << "-" << g.end << "] ";
     }
     cout << "\n\n";
+}
 
-    cout << "Process Arrival Burst Completion Waiting Turnaround\n";
+void printTable(const vector<Process>&pr){
+    cout << "Process Arrival Burst Priority Completion Waiting Turnaround\n";
     for(auto x:pr){
         cout << "P" << x.id << "\t"
              << x.arr << "\t"
              << x.burst << "\t"
+             << x.pr << "\t   "
              << x.ct << "\t   "
              << x.wt << "\t   "
              << x.tt << endl;
     }
+
+    double avgWt = 0, avgTt = 0;
+    for(auto x:pr){ avgWt += x.wt; avgTt += x.tt; }
+    cout << "\nAverage Waiting Time   : " << fixed << setprecision(2) << avgWt/pr.size() << endl;
+    cout << "Average Turnaround Time: " << fixed << setprecision(2) << avgTt/pr.size() << endl;
+}
+
+int main(){
+    int n;
+    cout<<"Enter number of process: ";
+    cin>>n;
+    vector<Process>pr(n);
+    for(int i=0;i<n;i++){
+        cout<<"Enter arrival time, burst time for process "<<i+1<<" : ";
+        cin>>pr[i].arr>>pr[i].burst;
+        pr[i].id = i+1;
+        pr[i].pr = 0;
+    }
+    sort(pr.begin(),pr.end(),com);
+    vector<GanttEntry> gantt;
+    calculate(pr,gantt);
+    printGantt(gantt);
+    printTable(pr);
 }

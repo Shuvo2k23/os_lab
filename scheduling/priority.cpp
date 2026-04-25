@@ -1,80 +1,159 @@
-#include <iostream>
-#include <algorithm>
+#include<bits/stdc++.h>
+
 using namespace std;
 
-struct Process {
-    int pid;
-    int arrival;
-    int burst;
-    int priority;
-    int completion;
-    int waiting;
-    int turnaround;
+struct Process{
+    int id,burst,arr,pr,wt,tt,ct;
 };
 
-// Sort by arrival time first, then by priority
-bool compare(Process a, Process b) {
-    if (a.arrival == b.arrival)
-        return a.priority < b.priority; // smaller value = higher priority
-    return a.arrival < b.arrival;
+struct GanttEntry{
+    int pid;
+    int start;
+    int end;
+};
+
+bool com(Process &a, Process &b){
+    if(a.arr==b.arr) return a.id<b.id;
+    return a.arr<b.arr;
 }
 
-int main() {
-    int n = 5;
-
-    // Predefined values (no manual input)
-    Process p[5] = {
-        {1, 0, 5, 2},
-        {2, 1, 3, 1},
-        {3, 2, 8, 4},
-        {4, 3, 6, 2},
-        {5, 4, 2, 3}
-    };
-
-    sort(p, p + n, compare);
-
-    int currentTime = 0;
-    bool completed[5] = {false};
-
+void calculate(vector<Process>&pr, vector<GanttEntry>&gantt, bool preemptive){
+    int n = pr.size();
+    int time = 0;
     int done = 0;
 
-    while (done < n) {
-        int idx = -1;
-        int highestPriority = 9999;
+    if(preemptive){
+        vector<int> rem(n);
+        for(int i = 0; i < n; i++) rem[i] = pr[i].burst;
 
-        for (int i = 0; i < n; i++) {
-            if (!completed[i] && p[i].arrival <= currentTime) {
-                if (p[i].priority < highestPriority) {
-                    highestPriority = p[i].priority;
-                    idx = i;
+        while(done < n){
+            int pick = -1;
+
+            // Pick process with highest priority (lower value) among arrived processes.
+            for(int i = 0; i < n; i++){
+                if(pr[i].arr <= time && rem[i] > 0){
+                    if(pick == -1 || pr[i].pr < pr[pick].pr ||
+                       (pr[i].pr == pr[pick].pr && pr[i].id < pr[pick].id)){
+                        pick = i;
+                    }
                 }
             }
+
+            int runPid = 0; // initially choose idle
+            if(pick != -1){
+                rem[pick]--;
+                runPid = pr[pick].id;
+                if(rem[pick] == 0){
+                    pr[pick].ct = time + 1;
+                    done++;
+                }
+            }
+
+            // Merge adjacent same-process entries in Gantt chart.
+            if(gantt.empty() || gantt.back().pid != runPid){
+                gantt.push_back({runPid, time, time + 1});
+            }else{
+                gantt.back().end = time + 1;
+            }
+
+            time++;
         }
+    }else{
+        vector<bool> finished(n, false);
 
-        if (idx == -1) {
-            currentTime++;
-        } else {
-            currentTime += p[idx].burst;
-            p[idx].completion = currentTime;
-            p[idx].turnaround = p[idx].completion - p[idx].arrival;
-            p[idx].waiting = p[idx].turnaround - p[idx].burst;
+        while(done < n){
+            int pick = -1;
 
-            completed[idx] = true;
+            for(int i = 0; i < n; i++){
+                if(!finished[i] && pr[i].arr <= time){
+                    if(pick == -1 || pr[i].pr < pr[pick].pr ||
+                       (pr[i].pr == pr[pick].pr && pr[i].arr < pr[pick].arr) ||
+                       (pr[i].pr == pr[pick].pr && pr[i].arr == pr[pick].arr && pr[i].id < pr[pick].id)){
+                        pick = i;
+                    }
+                }
+            }
+
+            if(pick == -1){     //for Idle period
+                int nextArr = INT_MAX;
+                for(int i = 0; i < n; i++){
+                    if(!finished[i]) nextArr = min(nextArr, pr[i].arr);
+                }
+                if(nextArr > time){
+                    if(!gantt.empty() && gantt.back().pid == 0){
+                        gantt.back().end = nextArr;
+                    }else{
+                        gantt.push_back({0, time, nextArr});
+                    }
+                    time = nextArr;
+                }
+                continue;
+            }
+
+            int start = time;
+            time += pr[pick].burst;
+            gantt.push_back({pr[pick].id, start, time});
+
+            pr[pick].ct = time;
+            finished[pick] = true;
             done++;
         }
     }
 
-    // Output
-    cout << "PID\tAT\tBT\tPR\tCT\tTAT\tWT\n";
-    for (int i = 0; i < n; i++) {
-        cout << p[i].pid << "\t"
-             << p[i].arrival << "\t"
-             << p[i].burst << "\t"
-             << p[i].priority << "\t"
-             << p[i].completion << "\t"
-             << p[i].turnaround << "\t"
-             << p[i].waiting << endl;
+    for(int i = 0; i < n; i++){
+        pr[i].tt = pr[i].ct - pr[i].arr;
+        pr[i].wt = pr[i].tt - pr[i].burst;
+    }
+}
+
+void printGantt(const vector<GanttEntry>&gantt){
+    cout << "\nGantt Chart:\n";
+    for(auto &g : gantt){
+        if(g.pid == 0) cout << "[IDLE: " << g.start << "-" << g.end << "] ";
+        else cout << "[P" << g.pid << ": " << g.start << "-" << g.end << "] ";
+    }
+    cout << "\n\n";
+}
+
+void printTable(const vector<Process>&pr){
+    cout << "Process Arrival Burst Priority Completion Waiting Turnaround\n";
+    for(auto x:pr){
+        cout << "P" << x.id << "\t"
+             << x.arr << "\t"
+             << x.burst << "\t"
+             << x.pr << "\t   "
+             << x.ct << "\t   "
+             << x.wt << "\t   "
+             << x.tt << endl;
     }
 
-    return 0;
+    double avgWt = 0, avgTt = 0;
+    for(auto x:pr){ avgWt += x.wt; avgTt += x.tt; }
+    cout << "\nAverage Waiting Time   : " << fixed << setprecision(2) << avgWt/pr.size() << endl;
+    cout << "Average Turnaround Time: " << fixed << setprecision(2) << avgTt/pr.size() << endl;
+}
+
+int main(){
+    int n;
+    cout<<"Enter number of process: ";
+    cin>>n;
+
+    int mode;
+    cout<<"Enter mode (1 = preemptive, 2 = non-preemptive): ";
+    cin>>mode;
+    bool preemptive = (mode == 1);
+
+    vector<Process>pr(n);
+    for(int i=0;i<n;i++){
+        cout<<"Enter arrival time, burst time, priority for process "<<i+1<<" : ";
+        cin>>pr[i].arr>>pr[i].burst>>pr[i].pr;
+        pr[i].id = i+1;
+    }
+
+    sort(pr.begin(),pr.end(),com);
+
+    vector<GanttEntry> gantt;
+    calculate(pr, gantt, preemptive);
+    printGantt(gantt);
+    printTable(pr);
 }
