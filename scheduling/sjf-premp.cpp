@@ -31,7 +31,7 @@ void calculate(vector<Process>&pr, vector<GanttEntry>&gantt){
         // Pick process with shortest remaining time among arrived processes.
         for(int i = 0; i < n; i++){
             if(pr[i].arr <= time && rem[i] > 0){
-                if(pick == -1 || rem[i] < rem[pick] || (rem[i] == rem[pick] && pr[i].id < pr[pick].id)){
+                if(pick == -1 || rem[i] < rem[pick] ){
                     pick = i;
                 }
             }

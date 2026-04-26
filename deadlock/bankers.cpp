@@ -3,7 +3,7 @@
 using namespace std;
 
 // Function to find safe sequence
-bool isSafe(vector<vector<int>> &alloc,
+void bankers(vector<vector<int>> &alloc,
             vector<vector<int>> &max,
             vector<int> &avail,
             int n, int m) {
@@ -54,7 +54,7 @@ bool isSafe(vector<vector<int>> &alloc,
 
         if (!found) {
             cout << "System is NOT in safe state!\n";
-            return false;
+            return;
         }
     }
 
@@ -66,7 +66,6 @@ bool isSafe(vector<vector<int>> &alloc,
     }
     cout << endl;
 
-    return true;
 }
 
 int main() {
@@ -94,7 +93,7 @@ int main() {
     // Available resources
     vector<int> avail = {3, 3, 2};
 
-    isSafe(alloc, max, avail, n, m);
+    bankers(alloc, max, avail, n, m);
 
     return 0;
 }

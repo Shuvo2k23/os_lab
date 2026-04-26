@@ -33,7 +33,7 @@ void calculate(vector<Process>&pr, vector<GanttEntry>&gantt, bool preemptive){
             for(int i = 0; i < n; i++){
                 if(pr[i].arr <= time && rem[i] > 0){
                     if(pick == -1 || pr[i].pr < pr[pick].pr ||
-                       (pr[i].pr == pr[pick].pr && pr[i].id < pr[pick].id)){
+                       (pr[i].pr == pr[pick].pr )){
                         pick = i;
                     }
                 }
@@ -67,8 +67,7 @@ void calculate(vector<Process>&pr, vector<GanttEntry>&gantt, bool preemptive){
             for(int i = 0; i < n; i++){
                 if(!finished[i] && pr[i].arr <= time){
                     if(pick == -1 || pr[i].pr < pr[pick].pr ||
-                       (pr[i].pr == pr[pick].pr && pr[i].arr < pr[pick].arr) ||
-                       (pr[i].pr == pr[pick].pr && pr[i].arr == pr[pick].arr && pr[i].id < pr[pick].id)){
+                       (pr[i].pr == pr[pick].pr && pr[i].arr < pr[pick].arr) ){
                         pick = i;
                     }
                 }
